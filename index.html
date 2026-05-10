@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#0a0a0f"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Formation Claude"/>
+<meta name="description" content="Formation interactive Claude API — mode offline"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>Formation Claude Expert</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Syne:wght@700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #0f0f1a;
+    --bg3: #13131f;
+    --border: #ffffff0f;
+    --text: #c8c8d0;
+    --muted: #55556a;
+    --c1: #00D4FF;
+    --c2: #FF6B35;
+    --c3: #7C3AED;
+    --c4: #10B981;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warn: #f59e0b;
+    --radius: 14px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  #app { min-height: 100vh; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #ffffff18; border-radius: 4px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: calc(24px + var(--safe-bot)); left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 20px;
+    font-size: 12px; color: var(--text);
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 999; white-space: nowrap;
+    box-shadow: 0 8px 32px #00000066;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Install banner ── */
+  #install-banner {
+    position: fixed; top: calc(16px + var(--safe-top)); left: 16px; right: 16px;
+    background: linear-gradient(135deg, #00D4FF22, #7C3AED22);
+    border: 1px solid #00D4FF44; border-radius: var(--radius);
+    padding: 14px 18px; display: none; align-items: center; gap: 12px;
+    z-index: 998; backdrop-filter: blur(12px);
+  }
+  #install-banner.show { display: flex; }
+  #install-banner .txt { flex: 1; font-size: 12px; color: #ccc; line-height: 1.5; }
+  #install-banner .txt strong { color: #00D4FF; display: block; margin-bottom: 2px; }
+  #install-banner button {
+    background: #00D4FF; border: none; border-radius: 8px;
+    padding: 8px 14px; font-family: inherit; font-size: 11px;
+    font-weight: 700; color: #000; cursor: pointer; white-space: nowrap;
+  }
+  #install-banner .close-btn {
+    background: transparent; border: none; color: #666;
+    cursor: pointer; font-size: 18px; padding: 0; line-height: 1;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; animation: fadeIn .25s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ── Home ── */
+  .home-header {
+    text-align: center;
+    padding: calc(40px + var(--safe-top)) 24px 32px;
+  }
+  .home-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #00D4FF18, #7C3AED18);
+    border: 1px solid #00D4FF33; border-radius: 20px;
+    padding: 6px 18px; font-size: 10px; color: #00D4FF;
+    letter-spacing: 3px; text-transform: uppercase; margin-bottom: 20px;
+  }
+  .home-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(26px, 7vw, 42px); font-weight: 800;
+    background: linear-gradient(135deg, #fff, #00D4FF);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.1; margin-bottom: 12px;
+  }
+  .home-sub { color: var(--muted); font-size: 12px; line-height: 1.7; max-width: 320px; margin: 0 auto 28px; }
+
+  .global-score {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 20px; margin-bottom: 32px;
+    font-size: 12px;
+  }
+  .global-score .val { font-weight: 800; font-size: 16px; }
+
+  .chapters-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; padding: 0 16px 32px;
+    max-width: 500px; margin: 0 auto;
+  }
+
+  .chapter-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px 16px;
+    cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+  .chapter-card:active { transform: scale(.97); }
+  .chapter-card .glow {
+    position: absolute; top: -20px; right: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    opacity: .15; pointer-events: none;
+  }
+  .chapter-card .emoji { font-size: 28px; margin-bottom: 10px; }
+  .chapter-card .num {
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .chapter-card .name {
+    font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+    color: #fff; margin-bottom: 4px; line-height: 1.2;
+  }
+  .chapter-card .dur { font-size: 10px; color: var(--muted); margin-bottom: 14px; }
+  .chapter-card .score-chip {
+    font-size: 10px; font-weight: 700;
+    border-radius: 6px; padding: 4px 8px;
+    display: inline-block;
+  }
+  .chapter-card .start-cta {
+    font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px;
+  }
+
+  /* ── Top bar (lesson/quiz) ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: calc(16px + var(--safe-top)) 16px 12px;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-back {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-family: inherit; font-size: 11px; color: var(--muted);
+    cursor: pointer;
+  }
+  .topbar-title { font-size: 11px; color: var(--muted); text-align: center; flex: 1; padding: 0 8px; }
+  .topbar-action {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 12px;
+    font-family: inherit; font-size: 11px; color: var(--text);
+    cursor: pointer; font-weight: 600;
+  }
+
+  /* ── Lesson ── */
+  .lesson-body { padding: 20px 16px 40px; max-width: 600px; margin: 0 auto; }
+
+  .section-tabs {
+    display: flex; gap: 8px; margin-bottom: 24px; overflow-x: auto;
+    padding-bottom: 4px; scrollbar-width: none;
+  }
+  .section-tabs::-webkit-scrollbar { display: none; }
+  .section-tab {
+    flex-shrink: 0; padding: 8px 14px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; font-family: inherit; font-size: 10px;
+    color: var(--muted); cursor: pointer; transition: all .15s;
+    white-space: nowrap;
+  }
+  .section-tab.active { font-weight: 700; }
+
+  .section-title {
+    font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+    color: #fff; margin-bottom: 18px; line-height: 1.3;
+  }
+
+  .content-block {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+    font-size: 13px; line-height: 1.9; color: var(--text);
+  }
+  .content-block p { margin-bottom: 8px; }
+  .content-block p:last-child { margin-bottom: 0; }
+  .content-block strong { color: #fff; }
+  .content-block .bullet { display: flex; gap: 8px; margin-bottom: 6px; }
+  .content-block .bullet-dot { flex-shrink: 0; margin-top: 2px; }
+  .content-block code {
+    background: #ffffff12; border-radius: 4px;
+    padding: 1px 6px; color: #00D4FF; font-size: 11px;
+  }
+
+  .example-toggle {
+    width: 100%; text-align: left; padding: 14px 16px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); font-family: inherit; font-size: 12px;
+    color: var(--muted); cursor: pointer; transition: all .15s;
+    display: flex; align-items: center; gap: 8px; margin-bottom: 2px;
+  }
+  .example-toggle.open { border-radius: var(--radius) var(--radius) 0 0; margin-bottom: 0; }
+
+  .example-box { border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; margin-bottom: 16px; }
+  .example-prompt {
+    background: #080812; padding: 16px;
+    border: 1px solid var(--border); border-top: none;
+  }
+  .example-response {
+    background: #06060f; padding: 16px;
+    border: 1px solid var(--border); border-top: none;
+  }
+  .example-label {
+    font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .example-code {
+    font-size: 11px; line-height: 1.8; white-space: pre-wrap;
+    word-break: break-word; font-family: 'JetBrains Mono', monospace;
+  }
+
+  .lesson-nav { display: flex; gap: 10px; margin-top: 28px; }
+  .lesson-nav button {
+    flex: 1; padding: 14px; border-radius: var(--radius);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn-secondary { background: var(--bg2); border: 1px solid var(--border) !important; color: var(--muted); }
+  .btn-primary { color: #000; }
+
+  /* ── Quiz ── */
+  .quiz-body { padding: 20px 16px 40px; max-width: 600px; margin: 0 auto; }
+
+  .quiz-progress { display: flex; gap: 6px; margin-bottom: 24px; }
+  .quiz-prog-bar { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background .3s; }
+
+  .quiz-q-num { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 14px; }
+  .quiz-question {
+    font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700;
+    color: #fff; line-height: 1.4; margin-bottom: 24px;
+  }
+
+  .quiz-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .quiz-option {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    cursor: pointer; transition: all .15s; text-align: left;
+    font-family: inherit; font-size: 13px; color: var(--text); line-height: 1.5;
+  }
+  .quiz-option:active { transform: scale(.98); }
+  .quiz-option .opt-letter {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 6px;
+    background: #ffffff08; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--muted);
+  }
+  .quiz-option.correct { border-color: #22c55e44; background: #22c55e0a; color: #22c55e; }
+  .quiz-option.correct .opt-letter { background: #22c55e22; border-color: #22c55e44; color: #22c55e; }
+  .quiz-option.wrong { border-color: #ef444444; background: #ef44440a; color: #ef4444; }
+  .quiz-option.wrong .opt-letter { background: #ef444422; border-color: #ef444444; color: #ef4444; }
+
+  .explanation {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+    font-size: 12px; color: var(--muted); line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .explanation .exp-tag { font-weight: 700; margin-bottom: 4px; }
+
+  .quiz-next {
+    width: 100%; padding: 16px; border-radius: var(--radius);
+    font-family: inherit; font-size: 14px; font-weight: 700;
+    border: none; cursor: pointer; transition: all .15s;
+    color: #000;
+  }
+
+  /* ── Result ── */
+  .result-body {
+    padding: calc(32px + var(--safe-top)) 16px calc(32px + var(--safe-bot));
+    max-width: 500px; margin: 0 auto; text-align: center;
+  }
+
+  .score-ring {
+    width: 130px; height: 130px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 24px; position: relative;
+  }
+  .score-ring-inner {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: var(--bg); display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .score-pct { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; }
+  .score-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .grade-chip {
+    display: inline-block; border-radius: 8px;
+    padding: 6px 16px; font-size: 13px; font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .grade-advice {
+    font-size: 13px; color: var(--muted); line-height: 1.7;
+    max-width: 340px; margin: 0 auto 28px;
+  }
+
+  .wrong-list { text-align: left; margin-bottom: 28px; }
+  .wrong-list h3 { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .wrong-item {
+    background: var(--bg2); border: 1px solid #ef444422;
+    border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  }
+  .wrong-item .wq { font-size: 12px; color: #ccc; margin-bottom: 8px; line-height: 1.5; }
+  .wrong-item .wa { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .wrong-item .wa span { font-weight: 600; }
+  .wrong-item .wa span.err { color: #ef4444; }
+  .wrong-item .wa span.ok { color: #22c55e; }
+  .wrong-item .wexp {
+    font-size: 11px; color: var(--muted); background: #ffffff05;
+    border-radius: 8px; padding: 10px; margin-top: 8px; line-height: 1.6;
+  }
+
+  .result-actions { display: flex; flex-direction: column; gap: 10px; }
+  .result-actions button {
+    width: 100%; padding: 15px; border-radius: var(--radius);
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .result-actions button:active { transform: scale(.98); }
+
+  /* ── Offline indicator ── */
+  #offline-bar {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: #f59e0b; color: #000;
+    text-align: center; font-size: 11px; font-weight: 700;
+    padding: calc(6px + var(--safe-top)) 16px 6px;
+    transform: translateY(-100%); transition: transform .3s; z-index: 1000;
+  }
+  #offline-bar.show { transform: none; }
+</style>
+</head>
+<body>
+
+<div id="offline-bar">✈️ Mode hors-ligne — Toute la formation est disponible</div>
+<div id="toast"></div>
+
+<div id="install-banner">
+  <div class="txt">
+    <strong>📱 Installer l'app</strong>
+    Accès offline · Icône sur l'écran d'accueil
+  </div>
+  <button id="install-btn">Installer</button>
+  <button class="close-btn" id="close-banner">×</button>
+</div>
+
+<div id="app">
+  <!-- Home -->
+  <div id="screen-home" class="screen active">
+    <div class="home-header">
+      <div class="home-badge">Formation Expert</div>
+      <h1 class="home-title">Maîtrisez<br/>Claude API</h1>
+      <p class="home-sub">Formation interactive · 4 chapitres · Quiz adaptatifs · 100% offline</p>
+      <div id="global-score-wrap" style="display:none">
+        <div class="global-score">
+          <span>Score global</span>
+          <span class="val" id="global-score-val">—</span>
+          <span id="global-grade-label" style="font-size:11px"></span>
+        </div>
+      </div>
+    </div>
+    <div class="chapters-grid" id="chapters-grid"></div>
+  </div>
+
+  <!-- Lesson -->
+  <div id="screen-lesson" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="goHome()">← Menu</button>
+      <div class="topbar-title" id="lesson-topbar-title"></div>
+      <button class="topbar-action" id="lesson-quiz-btn" onclick="startQuiz()">Quiz →</button>
+    </div>
+    <div class="lesson-body">
+      <div class="section-tabs" id="section-tabs"></div>
+      <h2 class="section-title" id="section-title"></h2>
+      <div class="content-block" id="section-content"></div>
+      <button class="example-toggle" id="example-toggle" onclick="toggleExample()">
+        <span id="example-arrow">▶</span>
+        <span id="example-label"></span>
+      </button>
+      <div class="example-box" id="example-box" style="display:none">
+        <div class="example-prompt">
+          <div class="example-label" style="color:#22c55e">Prompt / Code</div>
+          <pre class="example-code" id="example-prompt-code" style="color:#a0f0a0"></pre>
+        </div>
+        <div class="example-response">
+          <div class="example-label" style="color:#60a0d0">Réponse Claude</div>
+          <pre class="example-code" id="example-response-code" style="color:#b0d0f0"></pre>
+        </div>
+      </div>
+      <div class="lesson-nav" id="lesson-nav"></div>
+    </div>
+  </div>
+
+  <!-- Quiz -->
+  <div id="screen-quiz" class="screen">
+    <div class="topbar">
+      <button class="topbar-back" onclick="showScreen('lesson')">← Cours</button>
+      <div class="topbar-title" id="quiz-topbar-title">Quiz</div>
+      <div style="width:60px"></div>
+    </div>
+    <div class="quiz-body">
+      <div class="quiz-progress" id="quiz-progress"></div>
+      <div class="quiz-q-num" id="quiz-q-num"></div>
+      <div class="quiz-question" id="quiz-question"></div>
+      <div class="quiz-options" id="quiz-options"></div>
+      <div class="explanation" id="quiz-explanation" style="display:none"></div>
+      <button class="quiz-next" id="quiz-next-btn" style="display:none" onclick="nextQuestion()"></button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="screen-result" class="screen">
+    <div class="result-body">
+      <div class="score-ring" id="score-ring">
+        <div class="score-ring-inner">
+          <div class="score-pct" id="result-pct"></div>
+          <div class="score-label">score</div>
+        </div>
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:10px" id="result-chapter-name"></div>
+      <div class="grade-chip" id="result-grade-chip"></div>
+      <p class="grade-advice" id="result-advice"></p>
+      <div class="wrong-list" id="wrong-list"></div>
+      <div class="result-actions" id="result-actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════
+const CHAPTERS = [
+  {
+    id:1, title:"Comprendre Claude", icon:"🧠", dur:"~30 min",
+    color:"#00D4FF",
+    sections:[
+      {
+        title:"Qu'est-ce que Claude ?",
+        content:[
+          {t:"p", html:"Claude est un <strong>Large Language Model (LLM)</strong> développé par Anthropic. Il prédit le meilleur token suivant en fonction du contexte — ce qui lui permet de raisonner, générer du code, analyser des documents et converser naturellement."},
+          {t:"p", html:"<strong>Très efficace pour :</strong>"},
+          {t:"b", html:"Compréhension et génération de texte (50+ langues)"},
+          {t:"b", html:"Analyse de code, debugging, refactoring"},
+          {t:"b", html:"Raisonnement structuré et résolution de problèmes"},
+          {t:"b", html:"Extraction d'informations depuis des documents"},
+          {t:"p", html:"<strong>Ne fait PAS nativement :</strong>"},
+          {t:"b", html:"Mémoire entre sessions (stateless par défaut)"},
+          {t:"b", html:"Accès à internet en temps réel (sans outillage)"},
+          {t:"b", html:"Exécution de code (sans environnements spécifiques)"},
+        ],
+        ex:{
+          label:"Tester la compréhension contextuelle",
+          prompt:`Tu es un assistant RH expert.
+Contexte : Notre entreprise a 50 employés, secteur tech, France.
+Tâche : Résume en 3 points les obligations légales pour l'entretien annuel.
+Format : bullet points concis, ton professionnel.`,
+          response:`• Obligation légale : L'entretien professionnel est obligatoire tous les 2 ans (Loi du 5 mars 2014).
+
+• Bilan à 6 ans : État des lieux récapitulatif pour vérifier formation et évolution salariale.
+
+• Sanction employeur : Absence de bilan → abondement CPF de 3 000 € (entreprises +50 salariés).`
+        }
+      },
+      {
+        title:"La Context Window",
+        content:[
+          {t:"p", html:"La <strong>context window</strong> est la mémoire de travail de Claude pour une conversation. Tout ce qui s'y trouve influence la réponse."},
+          {t:"p", html:"<strong>Claude Sonnet 4</strong> : ~200 000 tokens ≈ 150 000 mots ≈ un roman entier."},
+          {t:"p", html:"<strong>Implications pour votre plateforme :</strong>"},
+          {t:"b", html:"Injectez vos documents métier complets dans chaque requête"},
+          {t:"b", html:"Le system prompt définit le «personnage» de l'agent"},
+          {t:"b", html:"Plus le contexte est riche, meilleures sont les réponses"},
+          {t:"b", html:"La mémoire entre sessions doit être gérée côté application (BDD)"},
+        ],
+        ex:{
+          label:"Structure d'un appel API complet",
+          prompt:`{
+  "model": "claude-sonnet-4-20250514",
+  "system": "Tu es l'assistant RH de TechCorp.
+             Tu connais notre convention collective.
+             Tu réponds toujours en français, concis.",
+  "messages": [
+    {"role":"user","content":"Congés pour 3 ans d'ancienneté ?"},
+    {"role":"assistant","content":"Selon notre convention..."},
+    {"role":"user","content":"Et pour un cadre ?"}
+  ],
+  "max_tokens": 1000
+}`,
+          response:`// Le system prompt = comportement permanent de l'agent
+// L'historique messages = mémoire de la session en cours
+// Vos docs injectés = base de connaissance métier
+
+// Pour la mémoire persistante entre sessions :
+// Stockez les résumés en BDD et réinjectez-les
+// dans le system prompt à chaque nouvelle session.`
+        }
+      }
+    ],
+    quiz:[
+      {
+        q:"Qu'est-ce que la 'context window' dans Claude ?",
+        opts:["La mémoire permanente entre toutes les conversations","La fenêtre de texte visible dans l'interface","La mémoire de travail disponible pour une seule requête","Le nombre maximum de langues supportées"],
+        ok:2,
+        exp:"La context window est la mémoire temporaire d'une requête (~200k tokens pour Sonnet). Elle se remet à zéro entre les sessions — c'est vous qui gérez la persistance."
+      },
+      {
+        q:"Pour votre plateforme, comment donner à Claude la connaissance des règles RH de votre entreprise ?",
+        opts:["Claude les connaît déjà automatiquement","En injectant vos documents dans le system prompt à chaque appel","En créant un compte entreprise sur Claude.ai","Ce n'est pas possible avec l'API"],
+        ok:1,
+        exp:"Claude est stateless. Vous devez injecter votre base de connaissance à chaque appel via le system prompt — c'est le principe du RAG (Retrieval-Augmented Generation)."
+      },
+      {
+        q:"Claude peut-il exécuter du code Python dans une réponse API standard ?",
+        opts:["Oui, toujours nativement","Non, il génère du code mais ne l'exécute pas sans outillage","Seulement si le code fait moins de 100 lignes","Oui, via la context window"],
+        ok:1,
+        exp:"L'API de base génère du texte/code sans l'exécuter. Pour exécuter du code, il faut l'outiller (tool use + sandbox, ou utiliser Claude Code)."
+      }
+    ]
+  },
+  {
+    id:2, title:"Prompt Engineering", icon:"✍️", dur:"~45 min",
+    color:"#FF6B35",
+    sections:[
+      {
+        title:"Les 5 principes fondamentaux",
+        content:[
+          {t:"p", html:"Un bon prompt est une <strong>spécification technique</strong>. Pensez-y comme un cahier des charges, pas une requête vague."},
+          {t:"b", html:"<strong>1. Rôle</strong> — Qui est Claude dans ce contexte ?"},
+          {t:"b", html:"<strong>2. Contexte</strong> — Quelles informations lui faut-il ?"},
+          {t:"b", html:"<strong>3. Tâche</strong> — Que doit-il faire exactement ?"},
+          {t:"b", html:"<strong>4. Format</strong> — Comment structurer la réponse ?"},
+          {t:"b", html:"<strong>5. Contraintes</strong> — Ce qu'il ne doit PAS faire ?"},
+          {t:"p", html:"Les <strong>balises XML</strong> : Claude a été entraîné avec XML — il les comprend nativement pour séparer les sections de vos prompts complexes."},
+        ],
+        ex:{
+          label:"Prompt faible vs prompt fort",
+          prompt:`❌ FAIBLE :
+"Analyse cette facture"
+
+✅ FORT :
+<role>Tu es un comptable expert en conformité fiscale française</role>
+
+<contexte>
+Notre ERP génère des factures fournisseurs.
+Tu dois les valider avant saisie comptable.
+</contexte>
+
+<tache>
+1. Vérifier les mentions légales (SIRET, TVA...)
+2. Contrôler les calculs (HT + TVA = TTC)
+3. Vérifier délai paiement max 60j
+</tache>
+
+<format>
+JSON: {"valide":bool,"erreurs":[],"score":0-100}
+</format>`,
+          response:`{
+  "valide": false,
+  "erreurs": [
+    "SIRET fournisseur absent (mention obligatoire)",
+    "Numéro TVA intracommunautaire manquant"
+  ],
+  "avertissements": [
+    "Délai paiement : 75 jours > limite 60j"
+  ],
+  "score": 42
+}`
+        }
+      },
+      {
+        title:"Few-shot & Chain-of-Thought",
+        content:[
+          {t:"p", html:"<strong>Few-shot prompting</strong> : montrer des exemples input/output dans le prompt. Technique la plus efficace pour formater précisément les sorties."},
+          {t:"p", html:"<strong>Chain-of-Thought (CoT)</strong> : demander à Claude de \"réfléchir étape par étape\". Améliore les performances sur tâches complexes (+40% sur benchmarks de raisonnement)."},
+          {t:"p", html:"<strong>Règle d'or :</strong>"},
+          {t:"b", html:"Tâches simples → instructions directes"},
+          {t:"b", html:"Tâches complexes/ambiguës → CoT + exemples"},
+          {t:"b", html:"Classification de masse → few-shot + JSON output"},
+        ],
+        ex:{
+          label:"Few-shot pour classification de tickets",
+          prompt:`Classifie les tickets support selon ces exemples :
+
+<exemples>
+"Mon mot de passe ne fonctionne plus"
+→ Catégorie: AUTHENTIFICATION, Priorité: HAUTE
+
+"Comment exporter en PDF ?"
+→ Catégorie: FONCTIONNALITÉ, Priorité: BASSE
+
+"L'application plante au démarrage"
+→ Catégorie: BUG_CRITIQUE, Priorité: URGENTE
+</exemples>
+
+Classifie : "Je ne reçois plus les notifications email depuis ce matin"`,
+          response:`Catégorie: NOTIFICATION_EMAIL, Priorité: HAUTE
+
+Raisonnement : Panne récente ("depuis ce matin") impactant
+les workflows utilisateurs → priorité haute.
+Non-critique car l'app fonctionne, mais bloquant
+pour le suivi opérationnel.`
+        }
+      }
+    ],
+    quiz:[
+      {
+        q:"Quelle technique améliore le plus les performances sur des tâches de raisonnement complexe ?",
+        opts:["Écrire le prompt en majuscules","Répéter la question plusieurs fois","Chain-of-Thought : demander de raisonner étape par étape","Utiliser le modèle le plus grand disponible"],
+        ok:2,
+        exp:"Le Chain-of-Thought force Claude à décomposer le problème avant de conclure. Particulièrement efficace pour le raisonnement logique, les calculs, et les décisions complexes."
+      },
+      {
+        q:"Pourquoi utiliser des balises XML dans vos prompts ?",
+        opts:["C'est une exigence technique de l'API","Claude a été entraîné avec XML — il segmente naturellement les sections","Pour réduire le nombre de tokens","XML est la seule façon de passer des variables"],
+        ok:1,
+        exp:"Claude comprend nativement les balises XML. Elles permettent de séparer clairement rôle, contexte, tâche, format et contraintes — rendant les prompts plus robustes."
+      },
+      {
+        q:"Vous devez classer 10 000 emails/jour. Quelle approche est la plus efficace ?",
+        opts:["Un seul prompt générique pour tous les emails","Few-shot avec 3-5 exemples + format JSON pour l'output","Demander à Claude de réfléchir en 500 mots avant de classer","Utiliser uniquement le Chain-of-Thought sans exemples"],
+        ok:1,
+        exp:"Few-shot + JSON output = classification rapide, cohérente et parseable. Le CoT serait sur-ingénierie ici et coûterait 10x plus de tokens inutilement."
+      }
+    ]
+  },
+  {
+    id:3, title:"API & Intégration", icon:"⚡", dur:"~60 min",
+    color:"#7C3AED",
+    sections:[
+      {
+        title:"Tool Use (Function Calling)",
+        content:[
+          {t:"p", html:"Le <strong>Tool Use</strong> est la fonctionnalité clé pour votre plateforme. Elle permet à Claude d'appeler VOS APIs internes."},
+          {t:"p", html:"<strong>Fonctionnement :</strong>"},
+          {t:"b", html:"Vous déclarez des «outils» avec leur schéma JSON"},
+          {t:"b", html:"Claude décide quand et comment les appeler"},
+          {t:"b", html:"Vous exécutez l'appel et renvoyez le résultat"},
+          {t:"b", html:"Claude intègre le résultat dans sa réponse finale"},
+          {t:"p", html:"<strong>Cas d'usage pour votre plateforme :</strong>"},
+          {t:"b", html:"Consulter l'ERP (stocks, commandes, factures)"},
+          {t:"b", html:"Créer des tickets dans votre ITSM"},
+          {t:"b", html:"Lire/écrire dans votre base RH"},
+          {t:"b", html:"Envoyer des emails ou notifications"},
+        ],
+        ex:{
+          label:"Agent qui consulte l'ERP et crée un ticket",
+          prompt:`tools: [{
+  name: "get_employee_info",
+  description: "Récupère les infos RH d'un employé",
+  input_schema: {
+    properties: {
+      email: { type: "string" }
+    }
+  }
+},
+{
+  name: "create_hr_ticket",
+  description: "Crée un ticket RH dans le système",
+  input_schema: {
+    properties: {
+      type: { enum: ["conge","formation","note_frais"] },
+      employee_id: { type: "string" },
+      details: { type: "object" }
+    }
+  }
+}]
+
+Message: "Marie (marie@techcorp.fr) demande 5 jours
+de congé du 20 au 24 juin"`,
+          response:`// Tour 1 : Claude appelle get_employee_info
+→ { email: "marie@techcorp.fr" }
+← { id:"EMP-042", solde_conges:12, manager:"jean@..." }
+
+// Tour 2 : Claude appelle create_hr_ticket
+→ { type:"conge", employee_id:"EMP-042",
+    details:{ debut:"2025-06-20", jours:5 } }
+← { ticket_id:"TKT-8821", statut:"en_attente" }
+
+// Réponse finale :
+"Demande créée ✅ (TKT-8821). Marie dispose de 12j,
+il lui en restera 7. Jean recevra la demande."`
+        }
+      },
+      {
+        title:"Streaming & Batch API",
+        content:[
+          {t:"p", html:"<strong>Streaming</strong> : recevoir les tokens au fur et à mesure. Essentiel pour les interfaces utilisateur — l'expérience perçue est 10x meilleure."},
+          {t:"p", html:"<strong>Batch API</strong> : traiter des milliers de requêtes en asynchrone avec un coût réduit de <strong>50%</strong>. Idéal pour les traitements nocturnes."},
+          {t:"p", html:"<strong>Règle de choix :</strong>"},
+          {t:"b", html:"Interaction utilisateur temps réel → <strong>Streaming</strong>"},
+          {t:"b", html:"Traitement de masse non-urgent → <strong>Batch API</strong>"},
+          {t:"b", html:"Traitement critique temps réel → <strong>API synchrone</strong>"},
+        ],
+        ex:{
+          label:"Streaming avec l'API JavaScript",
+          prompt:`const stream = await anthropic.messages.stream({
+  model: "claude-sonnet-4-20250514",
+  max_tokens: 1024,
+  messages: [{ role: "user", content: prompt }]
+});
+
+// Affichage token par token dans l'UI
+for await (const chunk of stream) {
+  if (chunk.type === 'content_block_delta') {
+    updateUI(chunk.delta.text); // temps réel
+  }
+}
+
+const finalMessage = await stream.finalMessage();`,
+          response:`// Résultat : l'utilisateur voit le texte apparaître
+// progressivement, comme si Claude "tapait" en direct.
+//
+// Latence perçue : ~200ms (premier token)
+// vs latence réelle : 3-8s (réponse complète)
+//
+// Pour votre plateforme :
+// Utilisez le streaming pour TOUS les chatbots.
+// L'UX sera transformée — vos utilisateurs
+// ne "verront" plus d'attente.`
+        }
+      }
+    ],
+    quiz:[
+      {
+        q:"Dans le Tool Use, qui exécute réellement l'appel vers votre ERP ?",
+        opts:["Claude exécute directement l'appel API","Anthropic exécute l'appel via ses serveurs","Votre code backend — Claude indique seulement quel outil appeler","Le navigateur de l'utilisateur"],
+        ok:2,
+        exp:"Claude ne fait qu'indiquer 'j'ai besoin d'appeler get_employee_info avec {email:...}'. C'est votre backend qui exécute l'appel réel et renvoie le résultat à Claude."
+      },
+      {
+        q:"Vous devez analyser 50 000 bulletins de paie par mois. Quelle approche choisir ?",
+        opts:["Streaming — pour avoir les résultats le plus vite","API standard synchrone — pour le contrôle total","Batch API — traitement asynchrone, coût -50%, parfait pour le volume","Plusieurs clés API en parallèle"],
+        ok:2,
+        exp:"50k documents/mois = traitement de masse non-urgent → Batch API. Vous économisez 50% sur les coûts et gérez le volume sans saturer votre quota de rate limiting."
+      },
+      {
+        q:"Quel est le principal avantage du streaming pour votre plateforme ?",
+        opts:["Réduire le coût des appels API de 50%","Permettre des réponses plus précises","Améliorer drastiquement l'UX — l'utilisateur voit les tokens en temps réel","Contourner la context window"],
+        ok:2,
+        exp:"Le streaming ne change pas la qualité ni le coût — il transforme l'expérience. Premier token en ~200ms vs attente de 5-8s. Pour un chatbot interne, c'est jour/nuit."
+      }
+    ]
+  },
+  {
+    id:4, title:"Architecture Agents", icon:"🏗️", dur:"~60 min",
+    color:"#10B981",
+    sections:[
+      {
+        title:"Agents vs Chatbots",
+        content:[
+          {t:"p", html:"Un <strong>chatbot</strong> répond à des questions. Un <strong>agent</strong> accomplit des objectifs en prenant des décisions autonomes sur plusieurs étapes."},
+          {t:"p", html:"<strong>Architecture pour votre plateforme :</strong>"},
+          {t:"b", html:"🧑‍💼 Agent RH — contrats, congés, formations"},
+          {t:"b", html:"💰 Agent Finance — factures, notes de frais"},
+          {t:"b", html:"🖥️ Agent IT — tickets, accès, incidents"},
+          {t:"b", html:"📋 Agent Juridique — contrats, conformité RGPD"},
+          {t:"b", html:"📊 Agent Reporting — KPIs, tableaux de bord"},
+          {t:"p", html:"<strong>Avantage :</strong> Chaque agent a un system prompt optimisé + accès aux seuls outils de son domaine (sécurité par conception)."},
+        ],
+        ex:{
+          label:"Orchestrateur qui route les demandes",
+          prompt:`// System prompt de l'orchestrateur
+"Tu es le répartiteur central de TechCorp.
+Analyse chaque demande et détermine l'agent cible.
+Réponds UNIQUEMENT en JSON."
+
+// Message utilisateur
+"J'ai besoin d'un accès serveur prod urgent
+et de savoir combien il me reste de RTT"`,
+          response:`{
+  "taches": [
+    {
+      "agent": "IT",
+      "priorite": "URGENTE",
+      "resume": "Accès temporaire serveur prod",
+      "delai": "immediat"
+    },
+    {
+      "agent": "RH",
+      "priorite": "NORMALE",
+      "resume": "Consultation solde RTT",
+      "delai": "peut_attendre"
+    }
+  ],
+  "traitement": "parallele"
+}
+// Les 2 agents traitent simultanément
+// → réponse consolidée en quelques secondes`
+        }
+      },
+      {
+        title:"MCP — Model Context Protocol",
+        content:[
+          {t:"p", html:"<strong>MCP</strong> est le standard ouvert d'Anthropic pour connecter Claude à vos systèmes. Pensez-y comme un \"USB universel\" pour les outils IA."},
+          {t:"p", html:"<strong>Pour votre plateforme :</strong>"},
+          {t:"b", html:"Connectez votre ERP, CRM, ITSM via MCP"},
+          {t:"b", html:"Claude accède à vos données en temps réel"},
+          {t:"b", html:"Les serveurs MCP sont des microservices que vous contrôlez"},
+          {t:"b", html:"Compatible avec tous les modèles supportant MCP"},
+          {t:"p", html:"<strong>Disponible aujourd'hui :</strong> Google Drive, GitHub, Slack, Jira, PostgreSQL, et des centaines d'autres."},
+        ],
+        ex:{
+          label:"Serveur MCP minimal pour votre ERP",
+          prompt:`import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+
+const server = new Server({
+  name: "erp-connector",
+  version: "1.0.0"
+});
+
+server.setRequestHandler("tools/list", async () => ({
+  tools: [{
+    name: "get_invoice",
+    description: "Récupère une facture depuis SAP",
+    inputSchema: {
+      properties: {
+        invoice_id: { type: "string" }
+      }
+    }
+  }]
+}));
+
+server.setRequestHandler("tools/call", async (req) => {
+  const invoice = await sapAPI.getInvoice(
+    req.params.arguments.invoice_id
+  );
+  return { content: [{ type:"text", text: JSON.stringify(invoice) }] };
+});`,
+          response:`// Architecture complète :
+
+[Utilisateur]
+    ↓
+[Claude Orchestrateur]
+    ↓              ←→ [MCP Server: ERP SAP]
+[Agent RH]         ←→ [MCP Server: JIRA]
+[Agent Finance]    ←→ [MCP Server: Slack]
+[Agent IT]         ←→ [MCP Server: PostgreSQL]
+
+// Chaque MCP Server = microservice Node.js/Python
+// que vous déployez dans votre infra.`
+        }
+      }
+    ],
+    quiz:[
+      {
+        q:"Quelle est la différence principale entre un chatbot et un agent IA ?",
+        opts:["Un agent est plus grand et utilise plus de tokens","Un agent accomplit des objectifs en plusieurs étapes autonomes ; un chatbot répond à des questions","Un chatbot peut utiliser des outils, pas un agent","Il n'y a aucune différence technique"],
+        ok:1,
+        exp:"Un agent planifie, décide, exécute des actions et s'adapte sur plusieurs étapes pour atteindre un objectif. Un chatbot se limite à répondre à des questions ponctuelles."
+      },
+      {
+        q:"Pourquoi donner à chaque agent uniquement les outils de son domaine ?",
+        opts:["Pour réduire le coût des tokens","Claude est incapable de gérer plus de 3 outils","Sécurité par conception — un agent RH ne doit pas accéder aux données finance","C'est une exigence technique de l'API"],
+        ok:2,
+        exp:"Principe du moindre privilège : chaque agent n'a accès qu'à ce dont il a besoin. Si un agent hallucine ou est compromis, le blast radius est limité à son domaine."
+      },
+      {
+        q:"Qu'est-ce que le Model Context Protocol (MCP) ?",
+        opts:["Un nouveau modèle Claude plus performant","Un standard ouvert pour connecter Claude à des outils externes de façon standardisée","Un protocole pour chiffrer les messages envoyés à Claude","Une façon de compresser le contexte pour économiser des tokens"],
+        ok:1,
+        exp:"MCP est un standard ouvert (comme USB) qui permet à Claude de se connecter à n'importe quel outil via un protocole unifié. Vous l'implémentez une fois, ça fonctionne avec tous les modèles compatibles."
+      }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let state = {
+  chapterIdx: 0,
+  sectionIdx: 0,
+  exampleOpen: false,
+  quizQ: 0,
+  quizAnswers: {},
+  scores: JSON.parse(localStorage.getItem('formation_scores') || '{}')
+};
+
+// ═══════════════════════════════════════════
+//  GRADES
+// ═══════════════════════════════════════════
+const GRADES = [
+  {min:0,  label:"Débutant",      color:"#ef4444", advice:"Relis ce chapitre et retente le quiz — les bases sont essentielles pour la suite."},
+  {min:40, label:"En progression",color:"#f97316", advice:"Tu as les grandes lignes. Expérimente les exemples avant le chapitre suivant."},
+  {min:60, label:"Intermédiaire", color:"#eab308", advice:"Bonne maîtrise ! Quelques points à consolider, identifiés ci-dessous."},
+  {min:80, label:"Avancé",        color:"#22c55e", advice:"Très bien ! Tu peux passer au chapitre suivant en confiance."},
+  {min:100,label:"Expert",        color:"#00D4FF", advice:"Parfait ! Tu maîtrises complètement ce chapitre. En avant !"},
+];
+
+function getGrade(score) {
+  let g = GRADES[0];
+  for (const gr of GRADES) { if (score >= gr.min) g = gr; }
+  return g;
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goHome() {
+  renderHome();
+  showScreen('home');
+}
+
+// ═══════════════════════════════════════════
+//  HOME
+// ═══════════════════════════════════════════
+function renderHome() {
+  const grid = document.getElementById('chapters-grid');
+  const ch_colors = CHAPTERS.map(c => c.color);
+
+  grid.innerHTML = CHAPTERS.map((ch, idx) => {
+    const score = state.scores[idx];
+    const grade = score !== undefined ? getGrade(score) : null;
+    return `
+    <div class="chapter-card" onclick="openChapter(${idx})"
+         style="border-color:${ch.color}22">
+      <div class="glow" style="background:${ch.color}"></div>
+      <div class="emoji">${ch.icon}</div>
+      <div class="num" style="color:${ch.color}">Chapitre ${ch.id} · ${ch.dur}</div>
+      <div class="name">${ch.title}</div>
+      <div class="dur">${ch.sections.length} sections · ${ch.quiz.length} questions</div>
+      ${grade
+        ? `<div class="score-chip" style="background:${grade.color}18;color:${grade.color};border:1px solid ${grade.color}33">
+             ${score}% · ${grade.label}
+           </div>`
+        : `<div class="start-cta" style="color:${ch.color}">Commencer <span>→</span></div>`
+      }
+    </div>`;
+  }).join('');
+
+  // Global score
+  const scores = Object.values(state.scores);
+  if (scores.length > 0) {
+    const avg = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+    const g = getGrade(avg);
+    document.getElementById('global-score-val').textContent = avg + '%';
+    document.getElementById('global-score-val').style.color = g.color;
+    document.getElementById('global-grade-label').textContent = g.label;
+    document.getElementById('global-grade-label').style.color = g.color;
+    document.getElementById('global-score-wrap').style.display = 'block';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  LESSON
+// ═══════════════════════════════════════════
+function openChapter(idx) {
+  state.chapterIdx = idx;
+  state.sectionIdx = 0;
+  state.exampleOpen = false;
+  renderLesson();
+  showScreen('lesson');
+}
+
+function renderLesson() {
+  const ch = CHAPTERS[state.chapterIdx];
+  const sec = ch.sections[state.sectionIdx];
+  const color = ch.color;
+
+  document.getElementById('lesson-topbar-title').innerHTML =
+    `<span style="color:${color}">${ch.icon} ${ch.title}</span>`;
+  document.getElementById('lesson-quiz-btn').style.background = color + '22';
+  document.getElementById('lesson-quiz-btn').style.color = color;
+  document.getElementById('lesson-quiz-btn').style.borderColor = color + '44';
+
+  // Section tabs
+  document.getElementById('section-tabs').innerHTML = ch.sections.map((s, i) => `
+    <button class="section-tab ${i===state.sectionIdx?'active':''}"
+            style="${i===state.sectionIdx?`color:${color};border-color:${color}55;background:${color}11`:''}"
+            onclick="switchSection(${i})">${s.title}</button>
+  `).join('');
+
+  document.getElementById('section-title').textContent = sec.title;
+
+  // Content
+  const cb = document.getElementById('section-content');
+  cb.innerHTML = sec.content.map(item => {
+    if (item.t === 'p') return `<p>${item.html}</p>`;
+    if (item.t === 'b') return `
+      <div class="bullet">
+        <span class="bullet-dot" style="color:${color}">▸</span>
+        <span>${item.html}</span>
+      </div>`;
+    return '';
+  }).join('');
+
+  // Example
+  const tog = document.getElementById('example-toggle');
+  tog.querySelector('#example-label').textContent = sec.ex.label;
+  tog.style.color = color;
+  tog.style.borderColor = color + '22';
+  document.getElementById('example-prompt-code').textContent = sec.ex.prompt;
+  document.getElementById('example-response-code').textContent = sec.ex.response;
+
+  const box = document.getElementById('example-box');
+  const arrow = document.getElementById('example-arrow');
+  if (state.exampleOpen) {
+    box.style.display = 'block';
+    arrow.textContent = '▼';
+    tog.classList.add('open');
+  } else {
+    box.style.display = 'none';
+    arrow.textContent = '▶';
+    tog.classList.remove('open');
+  }
+
+  // Nav
+  const nav = document.getElementById('lesson-nav');
+  nav.innerHTML = '';
+  if (state.sectionIdx > 0) {
+    const prev = document.createElement('button');
+    prev.className = 'btn-secondary';
+    prev.style.border = '1px solid var(--border)';
+    prev.textContent = '← Précédent';
+    prev.onclick = () => switchSection(state.sectionIdx - 1);
+    nav.appendChild(prev);
+  }
+  const next = document.createElement('button');
+  if (state.sectionIdx < ch.sections.length - 1) {
+    next.className = 'btn-primary';
+    next.style.background = color;
+    next.textContent = 'Suivant →';
+    next.onclick = () => switchSection(state.sectionIdx + 1);
+  } else {
+    next.className = 'btn-primary';
+    next.style.background = color;
+    next.textContent = '🎯 Passer au Quiz →';
+    next.onclick = startQuiz;
+  }
+  nav.appendChild(next);
+}
+
+function switchSection(idx) {
+  state.sectionIdx = idx;
+  state.exampleOpen = false;
+  renderLesson();
+  window.scrollTo(0,0);
+}
+
+function toggleExample() {
+  state.exampleOpen = !state.exampleOpen;
+  renderLesson();
+}
+
+// ═══════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════
+function startQuiz() {
+  state.quizQ = 0;
+  state.quizAnswers = {};
+  renderQuiz();
+  showScreen('quiz');
+}
+
+function renderQuiz() {
+  const ch = CHAPTERS[state.chapterIdx];
+  const q = ch.quiz[state.quizQ];
+  const color = ch.color;
+  const answered = state.quizAnswers[state.quizQ] !== undefined;
+
+  document.getElementById('quiz-topbar-title').innerHTML =
+    `<span style="color:${color}">${ch.icon}</span> Quiz`;
+
+  // Progress bars
+  document.getElementById('quiz-progress').innerHTML = ch.quiz.map((_,i) => `
+    <div class="quiz-prog-bar" style="background:${
+      i < state.quizQ ? color : i === state.quizQ ? color+'88' : 'var(--border)'
+    }"></div>
+  `).join('');
+
+  document.getElementById('quiz-q-num').textContent =
+    `Question ${state.quizQ+1} / ${ch.quiz.length}`;
+  document.getElementById('quiz-question').textContent = q.q;
+
+  // Options
+  document.getElementById('quiz-options').innerHTML = q.opts.map((opt, i) => {
+    let cls = 'quiz-option';
+    if (answered) {
+      if (i === q.ok) cls += ' correct';
+      else if (i === state.quizAnswers[state.quizQ]) cls += ' wrong';
+    }
+    const letter = answered
+      ? (i === q.ok ? '✓' : i === state.quizAnswers[state.quizQ] ? '✗' : String.fromCharCode(65+i))
+      : String.fromCharCode(65+i);
+    return `<button class="${cls}" onclick="answerQuiz(${i})" ${answered?'disabled':''}>
+      <div class="opt-letter">${letter}</div>
+      <span>${opt}</span>
+    </button>`;
+  }).join('');
+
+  // Explanation
+  const exp = document.getElementById('quiz-explanation');
+  const nxt = document.getElementById('quiz-next-btn');
+  if (answered) {
+    const isOk = state.quizAnswers[state.quizQ] === q.ok;
+    exp.style.display = 'block';
+    exp.innerHTML = `
+      <div class="exp-tag" style="color:${isOk?'#22c55e':'#ef4444'}">
+        ${isOk ? '✓ Correct !' : '✗ Incorrect'}
+      </div>
+      ${q.exp}`;
+    nxt.style.display = 'block';
+    nxt.style.background = color;
+    nxt.textContent = state.quizQ < ch.quiz.length-1 ? 'Question suivante →' : 'Voir mes résultats →';
+  } else {
+    exp.style.display = 'none';
+    nxt.style.display = 'none';
+  }
+}
+
+function answerQuiz(optIdx) {
+  if (state.quizAnswers[state.quizQ] !== undefined) return;
+  state.quizAnswers[state.quizQ] = optIdx;
+  renderQuiz();
+}
+
+function nextQuestion() {
+  const ch = CHAPTERS[state.chapterIdx];
+  if (state.quizQ < ch.quiz.length-1) {
+    state.quizQ++;
+    renderQuiz();
+    window.scrollTo(0,0);
+  } else {
+    finishQuiz();
+  }
+}
+
+function finishQuiz() {
+  const ch = CHAPTERS[state.chapterIdx];
+  const correct = ch.quiz.filter((_,i) => state.quizAnswers[i] === ch.quiz[i].ok).length;
+  const score = Math.round(correct / ch.quiz.length * 100);
+  state.scores[state.chapterIdx] = score;
+  localStorage.setItem('formation_scores', JSON.stringify(state.scores));
+  renderResult(score);
+  showScreen('result');
+}
+
+// ═══════════════════════════════════════════
+//  RESULT
+// ═══════════════════════════════════════════
+function renderResult(score) {
+  const ch = CHAPTERS[state.chapterIdx];
+  const grade = getGrade(score);
+  const color = ch.color;
+
+  // Ring
+  const ring = document.getElementById('score-ring');
+  const deg = score * 3.6;
+  ring.style.background = `conic-gradient(${grade.color} ${deg}deg, #ffffff0f 0)`;
+  ring.style.boxShadow = `0 0 40px ${grade.color}44`;
+
+  document.getElementById('result-pct').textContent = score + '%';
+  document.getElementById('result-pct').style.color = grade.color;
+  document.getElementById('result-chapter-name').textContent = ch.icon + ' ' + ch.title;
+
+  const chip = document.getElementById('result-grade-chip');
+  chip.textContent = grade.label;
+  chip.style.background = grade.color + '22';
+  chip.style.color = grade.color;
+  chip.style.border = `1px solid ${grade.color}44`;
+
+  document.getElementById('result-advice').textContent = grade.advice;
+
+  // Wrong answers
+  const wrongList = document.getElementById('wrong-list');
+  const wrongs = ch.quiz.filter((_,i) => state.quizAnswers[i] !== ch.quiz[i].ok);
+  if (wrongs.length === 0) {
+    wrongList.innerHTML = '';
+  } else {
+    wrongList.innerHTML = `<h3>Points à approfondir</h3>` +
+      ch.quiz.map((q,i) => {
+        if (state.quizAnswers[i] === q.ok) return '';
+        return `<div class="wrong-item">
+          <div class="wq">${q.q}</div>
+          <div class="wa">Ta réponse : <span class="err">${q.opts[state.quizAnswers[i]] ?? '—'}</span></div>
+          <div class="wa">Bonne réponse : <span class="ok">${q.opts[q.ok]}</span></div>
+          <div class="wexp">💡 ${q.exp}</div>
+        </div>`;
+      }).join('');
+  }
+
+  // Actions
+  const actions = document.getElementById('result-actions');
+  let html = `<button style="background:${color}22;color:${color};border:1px solid ${color}33" onclick="openChapter(${state.chapterIdx})">
+    ↺ Recommencer le chapitre
+  </button>`;
+  if (state.chapterIdx < CHAPTERS.length-1) {
+    html += `<button style="background:${CHAPTERS[state.chapterIdx+1].color};color:#000" onclick="openChapter(${state.chapterIdx+1})">
+      ${CHAPTERS[state.chapterIdx+1].icon} Chapitre suivant →
+    </button>`;
+  }
+  html += `<button style="background:#ffffff08;color:#888;border:1px solid var(--border)" onclick="goHome()">
+    ← Retour au menu
+  </button>`;
+  actions.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+function showToast(msg, dur=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ═══════════════════════════════════════════
+//  OFFLINE
+// ═══════════════════════════════════════════
+function updateOnlineStatus() {
+  const bar = document.getElementById('offline-bar');
+  if (!navigator.onLine) bar.classList.add('show');
+  else bar.classList.remove('show');
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', () => {
+  updateOnlineStatus();
+  showToast('✈️ Mode offline activé — tout fonctionne !');
+});
+updateOnlineStatus();
+
+// ═══════════════════════════════════════════
+//  PWA INSTALL
+// ═══════════════════════════════════════════
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('install-banner').classList.add('show');
+});
+
+document.getElementById('install-btn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') showToast('🎉 App installée ! Retrouvez-la sur votre écran d\'accueil.');
+  deferredPrompt = null;
+  document.getElementById('install-banner').classList.remove('show');
+});
+
+document.getElementById('close-banner').addEventListener('click', () => {
+  document.getElementById('install-banner').classList.remove('show');
+});
+
+window.addEventListener('appinstalled', () => {
+  showToast('✅ Formation Claude installée avec succès !');
+});
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+renderHome();
+</script>
+
+<!-- Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(reg => console.log('SW registered:', reg.scope))
+    .catch(err => console.log('SW error:', err));
+}
+</script>
+</body>
+</html>
